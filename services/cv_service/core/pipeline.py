@@ -70,43 +70,56 @@ class VisionPipeline:
         logger.info("🎬 Initializing spatial simulation...")
             
         while self.is_running:
-            time.sleep(1.0) # Faster updates for smoother spatial demo
+            # Variable polling interval for realism
+            time.sleep(random.uniform(0.8, 2.5)) 
             
-            # 1. Simulate arrivals
-            if random.random() > 0.8 and len(track_states) < 15:
+            # Simulate retail traffic patterns:
+            # 1. Random bursts (Groups of shoppers)
+            if random.random() > 0.90 and len(track_states) < 25:
+                group_size = random.randint(2, 5)
+                logger.info(f"👨‍👩‍👧‍👦 Group Entry: {group_size} people.")
+                for _ in range(group_size):
+                    max_track_id += 1
+                    track_states[max_track_id] = {
+                        'x': random.uniform(0, 30),
+                        'y': random.uniform(100, 380),
+                        'velocity': random.uniform(10, 35)
+                    }
+
+            # 2. Individual arrivals
+            elif random.random() > 0.6 and len(track_states) < 30:
                 max_track_id += 1
-                # Start at left edge (Entrance)
                 track_states[max_track_id] = {
                     'x': random.uniform(0, 50),
                     'y': random.uniform(100, 380),
-                    'velocity': random.uniform(15, 45) # Pixels per update
+                    'velocity': random.uniform(15, 45)
                 }
-                logger.debug(f"✨ Mock: Person {max_track_id} entered.")
 
-            # 2. Update positions & handle departures
+            # 3. Position updates & natural departures
             to_remove = []
             for tid, state in track_states.items():
-                # Move towards right (towards Checkout/Exit)
-                state['x'] += state['velocity']
-                # Add slight vertical jitter
-                state['y'] += random.uniform(-5, 5)
+                # Some people move faster, some slower (browsing)
+                speed_modifier = random.uniform(0.5, 1.5)
+                state['x'] += state['velocity'] * speed_modifier
+                state['y'] += random.uniform(-8, 8)
                 
-                # Check if exited frame (640 width)
+                # Check for exit (640 width)
                 if state['x'] > 640:
                     to_remove.append(tid)
 
             for tid in to_remove:
                 del track_states[tid]
 
-            # 3. Format for EventEngine
+            # 4. Data Formatting & Processing
             track_ids = list(track_states.keys())
             boxes = []
             for tid in track_ids:
                 s = track_states[tid]
-                # [x1, y1, x2, y2]
-                boxes.append([s['x']-20, s['y']-50, s['x']+20, s['y']+50])
+                # Dynamic box size for more visual variety
+                w, h = random.randint(35, 45), random.randint(90, 110)
+                boxes.append([s['x']-w/2, s['y']-h/2, s['x']+w/2, s['y']+h/2])
             
-            # 4. Process
-            events = self.event_engine.process_tracks(track_ids, np.array(boxes))
-            for event in events:
-                self.api_client.post_event(event)
+            if track_ids or to_remove:
+                events = self.event_engine.process_tracks(track_ids, np.array(boxes))
+                for event in events:
+                    self.api_client.post_event(event)

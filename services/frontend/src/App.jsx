@@ -4,6 +4,7 @@ import { StatCard } from './components/StatCard';
 import { EventFeed } from './features/analytics/EventFeed';
 import { useWebSocket } from './hooks/useWebSocket';
 import { Users, LogIn, LogOut, Radio, Clock, BarChart3 } from 'lucide-react';
+import { AIInsightsPanel } from './features/ai/AIInsightsPanel';
 
 function App() {
   const [occupancy, setOccupancy] = useState(0);
@@ -56,28 +57,37 @@ function App() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       <Sidebar />
       
-      <main className="flex-1 ml-64 p-8">
-        <header className="flex justify-between items-center mb-8">
+      <main className="flex-1 ml-64 p-10 max-w-[1600px]">
+        {/* Top Navigation / Header */}
+        <header className="flex justify-between items-center mb-10 pb-6 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Store Intelligence Dashboard</h1>
-            <p className="text-slate-500">Spatial Analytics & Behavioral Insights</p>
+            <div className="flex items-center space-x-2 text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-1">
+               <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+               <span>Operational Intelligence</span>
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Main Flagship Store</h1>
+            <p className="text-slate-500 text-sm mt-1">Monitoring live traffic and behavioral patterns across 3 zones.</p>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-              status === 'connected' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          <div className="flex items-center space-x-6">
+            <div className="text-right border-r border-slate-200 pr-6 hidden sm:block">
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Local Time</p>
+               <p className="text-sm font-bold text-slate-700">{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+            </div>
+            <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl shadow-sm border ${
+              status === 'connected' ? 'bg-white border-green-100 text-green-700' : 'bg-white border-red-100 text-red-700'
             }`}>
-              <Radio size={14} className={status === 'connected' ? 'animate-pulse' : ''} />
-              <span>{status === 'connected' ? 'Live Data Feed' : 'Connecting...'}</span>
+              <Radio size={16} className={status === 'connected' ? 'animate-pulse' : ''} />
+              <span className="text-xs font-bold uppercase tracking-wider">{status === 'connected' ? 'Live Stream' : 'Disconnected'}</span>
             </div>
           </div>
         </header>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           <StatCard 
             title="Current Occupancy" 
             value={occupancy} 
@@ -129,12 +139,15 @@ function App() {
                </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-              <h3 className="font-bold text-slate-800 mb-4">System Health</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <HealthRow label="CV Pipeline" status="online" />
-                <HealthRow label="Spatial Engine" status="online" />
-                <HealthRow label="Socket Layer" status="online" />
+            <div className="grid grid-cols-2 gap-6">
+              <AIInsightsPanel />
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 className="font-bold text-slate-800 mb-4 uppercase tracking-tighter text-xs">System Health</h3>
+                <div className="space-y-3">
+                  <HealthRow label="CV Pipeline" status="online" />
+                  <HealthRow label="Spatial Engine" status="online" />
+                  <HealthRow label="AI Intelligence" status="online" />
+                </div>
               </div>
             </div>
           </div>
@@ -171,8 +184,8 @@ const ZoneStat = ({ label, value, total, color }) => {
 };
 
 const HealthRow = ({ label, status }) => (
-  <div className="flex flex-col items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-    <span className="text-[10px] text-slate-500 uppercase font-bold mb-1">{label}</span>
+  <div className="flex justify-between items-center p-2 bg-slate-50 rounded border border-slate-100">
+    <span className="text-[10px] text-slate-500 uppercase font-bold">{label}</span>
     <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-black uppercase tracking-tighter">{status}</span>
   </div>
 );

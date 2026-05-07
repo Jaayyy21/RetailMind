@@ -1,55 +1,117 @@
 # RetailMind: Smart Retail Intelligence Platform
 
-RetailMind is a production-grade, AI-powered retail analytics ecosystem. It transforms raw video streams into actionable business intelligence using Computer Vision, real-time event streaming, and modern dashboarding.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/release/python-3110/)
+[![React 18](https://img.shields.io/badge/react-18-blue.svg)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+
+RetailMind is a production-grade, AI-powered retail analytics ecosystem designed to transform raw video data into actionable business intelligence. Built with a distributed microservices architecture, it combines Computer Vision (YOLOv8), Real-time Event Streaming (WebSockets), and Generative AI (Google Gemini) to provide store managers with deep behavioral insights.
+
+---
 
 ## 🏗 System Architecture
 
-RetailMind follows a distributed microservices architecture:
+RetailMind is built as a distributed system of specialized microservices, ensuring scalability and fault isolation.
 
-- **CV Service (Inference):** Python microservice running **YOLOv8** and **ByteTrack**. It processes video feeds (or mocks them) and emits structured events.
-- **Backend (API Gateway):** **Django REST Framework** + **Django Channels**. It manages retail metadata, persists analytics in **PostgreSQL**, and broadcasts real-time updates via **Redis**.
-- **Frontend (Dashboard):** **React** + **Vite** + **Tailwind**. A SaaS-grade analytics interface that connects to live event streams via WebSockets.
-- **Infrastructure:** Fully containerized with **Docker**, orchestrated with health-aware dependency management.
+```mermaid
+graph TD
+    subgraph "Edge Inference (CV Service)"
+        A[RTSP/Video/Mock] --> B(YOLOv8 + ByteTrack)
+        B --> C{Polygon Zone Engine}
+        C -- "HTTP/JSON Events" --> D
+    end
 
-## 🚀 Quick Start
+    subgraph "Core Backend (API Gateway)"
+        D[Django REST API] --> E[(PostgreSQL)]
+        D -- "Signal" --> F[Django Channels]
+        F <--> G[(Redis Broker)]
+    end
 
-### 1. Requirements
-- Docker & Docker Compose
-- (Optional) A local webcam or video file
+    subgraph "AI Intelligence Service"
+        H[FastAPI Service] <--> I[Google Gemini API]
+        H -- "Grounded Context Query" --> D
+    end
 
-### 2. Launching the Platform
-```bash
-# Clone and enter
-git clone <repo-url>
-cd RetailMind
-
-# Setup environment
-cp .env.example .env
-
-# Build and Start
-docker-compose up --build
+    subgraph "Analytics Dashboard"
+        F -- "WebSocket Stream" --> J[React + Tailwind UI]
+        J -- "User Query" --> H
+    end
 ```
 
-### 3. Accessing the Dashboard
-Once the services show as `healthy`:
-- **Main Dashboard:** [http://localhost:3000](http://localhost:3000)
-- **API Documentation:** [http://localhost:8000/api/v1/analytics/](http://localhost:8000/api/v1/analytics/)
-
-## 📈 Core Features (Phase 1)
-- **Real-time Occupancy:** Live tracking of customers currently in-store.
-- **Traffic Analytics:** Counting entries and exits via Computer Vision.
-- **Activity Feed:** Live stream of retail events (Entry, Exit, Occupancy changes).
-- **Service Health Monitoring:** Real-time pulse of CV nodes and database connectivity.
-
-## 🛠 Tech Stack
-- **Vision:** YOLOv8, OpenCV, ByteTrack.
-- **Backend:** Python 3.11, Django 4.2, Redis 7, PostgreSQL 15.
-- **Frontend:** React 18, Tailwind CSS, Lucide Icons.
-- **DevOps:** Docker, Healthchecks, Modular Service Scaffolding.
-
-## 🗺 Roadmap
-- **Phase 2:** Zone-based analytics (Heatmaps, Aisle performance).
-- **Phase 3:** Gemini AI integration for natural language retail insights.
+### 🧩 Service Overview
+- **CV Service:** Edge inference node. Performs object detection, multi-object tracking, and spatial polygon analysis (Point-in-Polygon).
+- **Backend Service:** The central source of truth. Manages metadata, persists events in PostgreSQL, and handles real-time broadcasting via Redis.
+- **AI Service:** The platform's "brain." Uses Gemini Pro to reason over structured analytics data for natural language business intelligence.
+- **Frontend Dashboard:** A modern SaaS-style interface for real-time monitoring and historical reporting.
 
 ---
-*Built with senior-level engineering practices for scalability, maintainability, and real-time performance.*
+
+## 🚀 Key Features
+
+### 1. Spatial Intelligence
+- **Polygon-Based Zones:** Define complex retail zones (Entrance, Aisle, Checkout) using custom polygonal coordinates.
+- **Dwell Time Tracking:** Automatically calculate how long customers stay in specific areas.
+- **Zone Transitions:** Monitor customer flow patterns through the store layout.
+
+### 2. Real-time Analytics
+- **WebSocket Synchronization:** Sub-second latency from edge detection to dashboard update.
+- **Occupancy Management:** Live tracking of current store density and traffic bursts.
+- **Activity Feed:** A granular audit log of every retail event (Entry, Exit, Zone Move).
+
+### 3. AI Insights Assistant
+- **Natural Language Querying:** Ask Gemini about your store's performance (e.g., *"Summarize aisle engagement today"*).
+- **Grounded Reasoning:** AI responses are strictly anchored in your store's actual PostgreSQL metrics to prevent hallucinations.
+
+---
+
+## 🛠 Tech Stack
+
+- **Computer Vision:** Ultralytics YOLOv8, OpenCV, ByteTrack, Shapely.
+- **Backend:** Python 3.11, Django, Django REST Framework, Django Channels.
+- **Frontend:** React, Vite, Tailwind CSS, Recharts, Lucide Icons.
+- **Datastores:** PostgreSQL (Persistence), Redis (Pub/Sub & Channel Layer).
+- **AI/LLM:** Google Gemini Pro API.
+- **Infrastructure:** Docker, Docker Compose, Healthchecks.
+
+---
+
+## 📦 Setup & Installation
+
+### Prerequisites
+- Docker & Docker Compose
+- Google Gemini API Key (Optional, for AI features)
+
+### Quick Start
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/RetailMind.git
+   cd RetailMind
+   ```
+
+2. **Configure Environment:**
+   ```bash
+   cp .env.example .env
+   # Add your GEMINI_API_KEY to .env for AI insights
+   ```
+
+3. **Launch the Platform:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access:**
+   - **Dashboard:** [http://localhost:3000](http://localhost:3000)
+   - **API Docs:** [http://localhost:8000/api/v1/analytics/](http://localhost:8000/api/v1/analytics/)
+
+---
+
+## 🗺 Roadmap
+- [ ] **Phase 4:** Multi-camera synchronization & Re-identification (Re-ID).
+- [ ] **Phase 5:** Automated Heatmap generation using coordinate distribution.
+- [ ] **Phase 6:** Predictive analytics for staffing optimization based on historical trends.
+
+## 🤝 Contributing
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📜 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
