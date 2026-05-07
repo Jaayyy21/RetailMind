@@ -1,0 +1,92 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-retailmind}
+      - POSTGRES_USER=${POSTGRES_USER:-retailadmin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-retailpassword}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retailadmin} -d ${POSTGRES_DB:-retailmind}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./services/backend:/app
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-retailadmin}:${POSTGRES_PASSWORD:-retailpassword}@db:5432/${POSTGRES_DB:-retailmind}
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_DEBUG=True
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/analytics/stores/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./services/frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_API_URL=http://localhost:8000/api/v1
+      - VITE_WS_URL=ws://localhost:8000/ws/analytics
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  cv_service:
+    build:
+      context: ./services/cv_service
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./services/cv_service:/app
+      - ./datasets:/app/datasets
+    environment:
+      - BACKEND_API_URL=http://backend:8000/api/v1/
+      - VIDEO_SOURCE=mock
+      - STORE_ID=1
+      - CAMERA_ID=1
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
