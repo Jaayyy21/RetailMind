@@ -16,6 +16,16 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI
 app = FastAPI(title="RetailMind AI Intelligence Service")
 
+# Add CORS Middleware
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, restrict to frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Configure Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:

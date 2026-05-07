@@ -47,18 +47,22 @@ class AnalyticsService:
         """
         Calculates average dwell time and current occupancy per zone.
         """
-        from django.db.models import Avg, Count
+        from django.db.models import Avg, Count, FloatField
+        from django.db.models.functions import Cast
         from django.utils import timezone
         from datetime import timedelta
 
         last_hour = timezone.now() - timedelta(hours=1)
         
+        # We need to cast the JSON dwell_time value to a float for aggregation
         stats = AnalyticsEvent.objects.filter(
             store_id=store_id,
             timestamp__gte=last_hour,
             event_type='ZONE_EXIT'
+        ).annotate(
+            dwell_float=Cast('metadata__dwell_time', output_field=FloatField())
         ).values('zone__name').annotate(
-            avg_dwell=Avg('metadata__dwell_time'),
+            avg_dwell=Avg('dwell_float'),
             total_visits=Count('id')
         )
         

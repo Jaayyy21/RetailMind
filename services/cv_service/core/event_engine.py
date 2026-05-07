@@ -20,8 +20,8 @@ class EventEngine:
         self.track_entry_times = {} # track_id -> {zone_id: entry_time}
         
         # In production, these would be fetched from the backend or config
-        self.store_id = os.getenv("STORE_ID", 1)
-        self.camera_id = os.getenv("CAMERA_ID", 1)
+        self.store_id = int(os.getenv("STORE_ID", 1))
+        self.camera_id = int(os.getenv("CAMERA_ID", 1))
 
         # Initialize Mock Zones for Phase 2 Demo
         self._setup_mock_zones()
