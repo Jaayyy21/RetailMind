@@ -19,14 +19,15 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
+# Copy project files
 COPY . /app/
 
-# Make entrypoint executable
+# Explicitly set permissions (even though volume mounts might override this on Windows)
 RUN chmod +x /app/entrypoint.sh
 
 # Expose port 8000
 EXPOSE 8000
 
-# Run the application
-CMD ["/app/entrypoint.sh"]
+# Use 'bash' to run the script explicitly to bypass 'permission denied' issues 
+# often caused by host volume mount permission mismatches.
+CMD ["/bin/bash", "/app/entrypoint.sh"]
