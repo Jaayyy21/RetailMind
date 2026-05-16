@@ -3,11 +3,35 @@ set -e
 
 # Wait for postgres to be ready
 echo "📡 Waiting for PostgreSQL to be ready on db:5432..."
-until python -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.connect(('db', 5432))" 2>/dev/null; do
-  echo "⏳ PostgreSQL is unavailable - sleeping"
-  sleep 1
+# We use a more robust check that actually tries to connect via python socket
+# but we also add a timeout to avoid infinite loops if something is fundamentally wrong.
+MAX_RETRIES=30
+COUNT=0
+until python -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_STREAM); s.settimeout(1); s.connect(('db', 5432))" 2>/dev/null || [ $COUNT -eq $MAX_RETRIES ]; do
+  COUNT=$((COUNT+1))
+  echo "⏳ PostgreSQL is unavailable (Attempt $COUNT/$MAX_RETRIES) - sleeping"
+  sleep 2
 done
-echo "✅ PostgreSQL started"
+
+if [ $COUNT -eq $MAX_RETRIES ]; then
+  echo "❌ PostgreSQL was not ready in time. Exiting."
+  exit 1
+fi
+
+echo "✅ PostgreSQL port is open"
+
+echo "🔍 Verifying database connectivity..."
+until python manage.py shell -c "from django.db import connections; connections['default'].cursor()" 2>/dev/null || [ $COUNT -eq $MAX_RETRIES ]; do
+  COUNT=$((COUNT+1))
+  echo "⏳ Database is not yet accepting Django connections... (Attempt $COUNT/$MAX_RETRIES)"
+  sleep 2
+done
+
+if [ $COUNT -eq $MAX_RETRIES ]; then
+  echo "❌ Database connection failed. Check your DATABASE_URL and DB credentials."
+  exit 1
+fi
+echo "✅ Database connection verified"
 
 # Ensure migrations are generated for our local apps
 echo "🔨 Generating migrations..."

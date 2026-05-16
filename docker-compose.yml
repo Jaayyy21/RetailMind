@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retailadmin} -d ${POSTGRES_DB:-retailmind}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-retailadmin} -d ${POSTGRES_DB:-retailmind} -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -34,8 +34,10 @@ services:
     restart: always
     volumes:
       - ./services/backend:/app
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER:-retailadmin}:${POSTGRES_PASSWORD:-retailpassword}@db:5432/${POSTGRES_DB:-retailmind}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-retailadmin}:${POSTGRES_PASSWORD:-retailpassword}@db:5432/${POSTGRES_DB:-retailmind}
       - REDIS_URL=redis://redis:6379/0
       - DJANGO_DEBUG=True
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key}
@@ -48,11 +50,11 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/analytics/stores/"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/v1/analytics/stores/"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   frontend:
     build:
@@ -68,6 +70,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - VITE_API_URL=http://localhost:8000/api/v1
       - VITE_WS_URL=ws://localhost:8000/ws/analytics
+      - VITE_AI_API_URL=http://localhost:8001/api/v1
     depends_on:
       backend:
         condition: service_healthy
@@ -96,8 +99,9 @@ services:
     restart: always
     volumes:
       - ./services/ai_service:/app
+    env_file:
+      - .env
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - BACKEND_API_URL=http://backend:8000/api/v1/
     ports:
       - "8001:8001"
@@ -105,7 +109,7 @@ services:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8001/health"]
       interval: 10s
       timeout: 5s
       retries: 3

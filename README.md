@@ -41,7 +41,7 @@ graph TD
 ### 🧩 Service Overview
 - **CV Service:** Edge inference node. Performs object detection, multi-object tracking, and spatial polygon analysis (Point-in-Polygon).
 - **Backend Service:** The central source of truth. Manages metadata, persists events in PostgreSQL, and handles real-time broadcasting via Redis.
-- **AI Service:** The platform's "brain." Uses Gemini Pro to reason over structured analytics data for natural language business intelligence.
+- **AI Service:** The platform's "brain." Uses Gemini 1.5 Flash to reason over structured analytics data for natural language business intelligence.
 - **Frontend Dashboard:** A modern SaaS-style interface for real-time monitoring and historical reporting.
 
 ---
@@ -70,7 +70,7 @@ graph TD
 - **Backend:** Python 3.11, Django, Django REST Framework, Django Channels.
 - **Frontend:** React, Vite, Tailwind CSS, Recharts, Lucide Icons.
 - **Datastores:** PostgreSQL (Persistence), Redis (Pub/Sub & Channel Layer).
-- **AI/LLM:** Google Gemini Pro API.
+- **AI/LLM:** Google Gemini 1.5 Flash API.
 - **Infrastructure:** Docker, Docker Compose, Healthchecks.
 
 ---

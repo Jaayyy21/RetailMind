@@ -13,15 +13,28 @@ export const AIInsightsPanel = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8001/api/v1/ai/query', {
+      const aiBaseUrl = import.meta.env.VITE_AI_API_URL || 'http://localhost:8001/api/v1';
+      console.log('📡 Sending AI Query to:', `${aiBaseUrl}/ai/query`);
+      const response = await fetch(`${aiBaseUrl}/ai/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: query, store_id: 1 }),
       });
       const data = await response.json();
-      setResult(data.answer);
+      console.log('✅ AI Response Data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.detail || `Server error: ${response.status}`);
+      }
+      
+      if (data.answer) {
+        setResult(data.answer);
+      } else {
+        setResult("The AI service returned an empty response. Check if the store stats are available.");
+      }
     } catch (err) {
-      setResult("Failed to reach the AI Intelligence Service. Ensure ai_service is running.");
+      console.error('❌ AI Query Error:', err);
+      setResult(`Query Failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -39,7 +52,7 @@ export const AIInsightsPanel = () => {
           </div>
           <div>
             <h2 className="font-black text-white text-sm uppercase tracking-widest">AI Cognition</h2>
-            <p className="text-[9px] text-slate-500 font-mono mt-0.5">Gemini Pro Integration</p>
+            <p className="text-[9px] text-slate-500 font-mono mt-0.5">Gemini Flash Integration</p>
           </div>
         </div>
         <div className="px-2 py-1 rounded bg-white/5 border border-white/10 flex items-center space-x-1.5">

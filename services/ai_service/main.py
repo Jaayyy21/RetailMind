@@ -3,7 +3,7 @@ import logging
 import google.generativeai as genai
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import requests
 from dotenv import load_dotenv
 
@@ -41,7 +41,7 @@ class QueryRequest(BaseModel):
 
 class InsightResponse(BaseModel):
     answer: str
-    data_context: Optional[Dict[str, Any]] = None
+    data_context: Optional[Union[Dict[str, Any], List[Any]]] = None
 
 @app.post("/api/v1/ai/query", response_model=InsightResponse)
 async def query_retail_data(request: QueryRequest):
@@ -56,7 +56,7 @@ async def query_retail_data(request: QueryRequest):
         response.raise_for_status()
         retail_data = response.json()
     except Exception as e:
-        logger.error(f"Error fetching retail data: {e}")
+        logger.error(f"Error fetching retail data from {stats_url}: {e}")
         raise HTTPException(status_code=500, detail="Could not retrieve retail analytics for grounding.")
 
     # 2. Construct Grounded Prompt for Gemini
@@ -65,7 +65,7 @@ async def query_retail_data(request: QueryRequest):
     You are the RetailMind AI Intelligence Assistant. 
     You provide factual, concise business insights based on the provided retail analytics data.
     
-    Current Store Data Context (JSON):
+    Current Store Data Context:
     {context_str}
     
     User Question: {request.prompt}
@@ -79,21 +79,63 @@ async def query_retail_data(request: QueryRequest):
 
     # 3. Call Gemini
     try:
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(full_prompt)
-        return InsightResponse(
-            answer=response.text,
-            data_context=retail_data
-        )
-    except Exception as e:
-        logger.error(f"Gemini API Error: {e}")
-        # Fallback for demo if API key is missing
         if not GEMINI_API_KEY:
+             logger.info("Running in DEMO MODE (no API key)")
              return InsightResponse(
                 answer="[DEMO MODE] I see the following data: " + context_str + ". (Add GEMINI_API_KEY for full AI insights)",
                 data_context=retail_data
             )
-        raise HTTPException(status_code=500, detail="AI Service Error")
+        
+        # Resilient Model Selection Logic
+        preferred_model = 'gemini-1.5-flash'
+        try:
+            logger.info(f"Attempting primary model: {preferred_model}")
+            model = genai.GenerativeModel(preferred_model)
+            response = model.generate_content(full_prompt)
+        except Exception as primary_error:
+            error_str = str(primary_error)
+            logger.warning(f"Primary model {preferred_model} failed: {error_str}")
+            
+            # If 404 or Quota error, try to find an alternative
+            if "404" in error_str or "429" in error_str:
+                logger.info("Searching for available fallback 'flash' models...")
+                try:
+                    available_models = [m.name for m in genai.list_models() if 'flash' in m.name.lower() and 'generateContent' in m.supported_generation_methods]
+                    if available_models:
+                        fallback_model = available_models[0].replace('models/', '')
+                        logger.info(f"Switching to fallback model: {fallback_model}")
+                        model = genai.GenerativeModel(fallback_model)
+                        response = model.generate_content(full_prompt)
+                    else:
+                        raise primary_error
+                except Exception as fallback_error:
+                    logger.error(f"Fallback selection failed: {fallback_error}")
+                    raise primary_error
+            else:
+                raise primary_error
+        
+        logger.info("Gemini response received successfully")
+        
+        answer = response.text if response.text else "Gemini was unable to generate an insight based on the current data."
+        
+        return InsightResponse(
+            answer=answer,
+            data_context=retail_data
+        )
+    except Exception as e:
+        logger.error(f"Gemini API Error: {str(e)}")
+        
+        # Diagnostic: If it's a 404, list all available models for debugging
+        if "404" in str(e):
+            try:
+                all_models = [m.name for m in genai.list_models()]
+                logger.info(f"All available models: {all_models}")
+            except:
+                pass
+                
+        if hasattr(e, 'message'):
+            logger.error(f"Error Message: {e.message}")
+        raise HTTPException(status_code=500, detail=f"AI Service Error: {str(e)}")
 
 @app.get("/health")
 def health_check():
