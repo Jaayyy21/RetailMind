@@ -84,7 +84,7 @@ graph TD
 ### Quick Start
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/RetailMind.git
+   git clone https://github.com/Jaayyy21/RetailMind.git
    cd RetailMind
    ```
 
