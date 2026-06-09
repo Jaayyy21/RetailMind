@@ -19,7 +19,7 @@ RetailMind is a production-grade, AI-powered retail analytics ecosystem designed
 
 <p align="center">
   <img src="assets/dashboard.png" width="45%">
-  <img src="assets/tracking.png" width="45%">
+  <img src="assets/RetailMind2.png" width="45%">
 </p>
 
 ---
